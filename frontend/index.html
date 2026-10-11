@@ -51,6 +51,14 @@
   }
   button.primary:disabled { opacity: .45; cursor: wait; }
   .hint { margin-top: 10px; font-size: 12px; color: var(--muted); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .chip {
+    font: 500 12px inherit; color: var(--text); background: var(--panel2);
+    border: 1px solid var(--line); border-radius: 999px; padding: 6px 11px;
+    cursor: pointer; max-width: 100%; white-space: nowrap; overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
   .banner { margin-top: 14px; font-size: 13px; padding: 10px 12px; border-radius: 10px; display: none; }
   .banner.err { display: block; background: #2a1512; border: 1px solid #57291f; color: #f0a894; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
@@ -93,6 +101,8 @@
   <section class="panel">
     <label for="concept">Game concept</label>
     <textarea id="concept">A fantasy game set in an enchanted forest: a druid hero, a moss-covered beast, and glowing teal runes</textarea>
+    <label>Try a demo</label>
+    <div class="chips" id="chips"></div>
 
     <label>Art style</label>
     <div class="styles" id="styles"></div>
@@ -117,6 +127,13 @@ let sid = null, timer = null, chosenStyle = null;
 
 const $ = id => document.getElementById(id);
 
+function selectStyle(id) {
+  chosenStyle = id;
+  document.querySelectorAll(".style-card").forEach(x => x.classList.remove("sel"));
+  const el = document.querySelector(`.style-card[data-id="${id}"]`);
+  if (el) el.classList.add("sel");
+}
+
 async function init() {
   try {
     const j = await (await fetch("/api/styles")).json();
@@ -127,15 +144,28 @@ async function init() {
     for (const s of j.styles) {
       const b = document.createElement("button");
       b.className = "style-card" + (s.id === chosenStyle ? " sel" : "");
+      b.dataset.id = s.id;
       b.innerHTML = `<div class="name">${s.label}</div><div class="swatches">` +
         s.palette.map(c => `<i style="background:${c}"></i>`).join("") + `</div>`;
-      b.onclick = () => {
-        chosenStyle = s.id;
-        document.querySelectorAll(".style-card").forEach(x => x.classList.remove("sel"));
-        b.classList.add("sel");
-      };
+      b.onclick = () => selectStyle(s.id);
       $("styles").appendChild(b);
     }
+    // One-click demo chips (real AI sets for pre-cached concepts, DEMO_MODE=1)
+    try {
+      const d = await (await fetch("/api/demos")).json();
+      for (const demo of d.demos || []) {
+        const c = document.createElement("button");
+        c.className = "chip";
+        c.title = demo.concept;
+        c.textContent = demo.concept.length > 44 ? demo.concept.slice(0, 44) + "…" : demo.concept;
+        c.onclick = () => {
+          $("concept").value = demo.concept;
+          selectStyle(demo.style);
+          $("go").onclick();
+        };
+        $("chips").appendChild(c);
+      }
+    } catch (e) { /* chips are optional */ }
     $("go").disabled = false;
   } catch (e) {
     $("hint").textContent = "Could not reach the API: " + e;

@@ -41,7 +41,6 @@ from ai import (  # noqa: E402
     DEFAULT_STYLE,
     STYLES,
     contact_sheet,
-    generate_asset_set,
     list_styles,
     regenerate_asset,
 )
@@ -110,16 +109,15 @@ def _assets_view(sid: str, session) -> list[dict]:
     return out
 
 
-def _run_generation(sid: str, concept: str, style: str, provider: str, use_cache: bool):
+def _run_generation(sid: str, concept: str, style: str, provider: str, prefer_cache):
     out_dir = OUT_ROOT / sid
     try:
-        if use_cache:
-            from ai import generate_or_cached
-            session, source = generate_or_cached(concept, style, provider_name=provider,
-                                                 out_dir=str(out_dir))
-        else:
-            session = generate_asset_set(concept, style, provider, out_dir=str(out_dir))
-            source = "live"
+        # generate_or_cached is the drop-in with the demo safety net: it honours
+        # DEMO_MODE / LIVE_TIMEOUT_S itself (prefer_cache=None), or forces the
+        # cache-first path when the client asks (use_cache=true).
+        from ai import generate_or_cached
+        session, source = generate_or_cached(concept, style, provider_name=provider,
+                                             out_dir=str(out_dir), prefer_cache=prefer_cache)
         # Best-effort side-by-side sheet (the demo's money shot).
         paths = [session.assets[t]["path"] for t in ASSET_TYPES
                  if session.assets[t].get("path")]
@@ -152,6 +150,14 @@ def styles():
     return jsonify(styles=list_styles(), default=DEFAULT_STYLE, provider=default_provider())
 
 
+@app.get("/api/demos")
+def demos():
+    """Pre-built demo concepts (one-click chips in the UI). Cached sets are
+    served instantly by the pipeline's demo-cache layer when DEMO_MODE=1."""
+    from ai.cache import load_demos
+    return jsonify(demos=load_demos())
+
+
 @app.post("/api/generate")
 def generate():
     body = request.get_json(silent=True) or {}
@@ -164,7 +170,7 @@ def generate():
     provider = (body.get("provider") or default_provider()).lower()
     if not _known_provider(provider):
         return jsonify(error=f"unknown provider {provider!r}"), 400
-    use_cache = bool(body.get("use_cache", False))
+    use_cache = body.get("use_cache")  # None -> DEMO_MODE env decides; true -> force cache-first
 
     sid = uuid.uuid4().hex[:12]
     _job(sid, "running")
