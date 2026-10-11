@@ -161,6 +161,7 @@ async function init() {
         c.onclick = () => {
           $("concept").value = demo.concept;
           selectStyle(demo.style);
+          if (demo.static) { renderStatic(demo); return; }  // Vercel: ship the art as static files
           $("go").onclick();
         };
         $("chips").appendChild(c);
@@ -192,6 +193,47 @@ function renderSkeleton() {
     $("badge-" + t).textContent = "queued";
   }
   $("actions").innerHTML = "";
+}
+
+function showImg(type, src) {
+  $("img-" + type).innerHTML = "";
+  $("img-" + type).style.backgroundImage = `url(${src})`;
+  $("img-" + type).style.backgroundSize = "100% 100%";
+}
+
+// Vercel serverless mode: the generate call returns the finished set inline
+function renderDirect(j) {
+  renderSkeleton();
+  $("go").disabled = false;
+  let done = 0;
+  for (const a of j.assets) {
+    const b = $("badge-" + a.type);
+    if (a.name) $("name-" + a.type).textContent = a.name;
+    if (a.status === "done" && a.data_url) {
+      done++;
+      showImg(a.type, a.data_url);
+      b.textContent = "done"; b.className = "badge done";
+    } else {
+      $("img-" + a.type).innerHTML = "";
+      b.textContent = a.status; b.className = "badge " + a.status;
+      if (a.error) $("err-" + a.type).textContent = a.error;
+    }
+  }
+  $("progress").textContent = `Done &mdash; ${done}/${j.total} assets (model: ${j.provider}). ` +
+    (j.provider === "mock" ? "Add GEMINI_API_KEY / OPENAI_API_KEY to Vercel env for real images." : "");
+}
+
+// Vercel static mode: real AI art shipped in /demo/, no API call needed
+function renderStatic(demo) {
+  renderSkeleton();
+  for (const t of TYPES) {
+    showImg(t, `${demo.base}/${t}.png`);
+    const b = $("badge-" + t);
+    b.textContent = "done"; b.className = "badge done";
+    if (demo.names && demo.names[t]) $("name-" + t).textContent = demo.names[t];
+  }
+  $("progress").textContent = `Demo set served from static cache &mdash; ${TYPES.length}/${TYPES.length} assets (real AI art).`;
+  $("actions").innerHTML = `<a class="linkish" href="${demo.base}/contact_sheet.png" target="_blank">Contact sheet</a>`;
 }
 
 function render(j) {
@@ -274,6 +316,7 @@ $("go").onclick = async () => {
     });
     const j = await r.json();
     if (!r.ok) { fail(j.error || "Request failed."); $("go").disabled = false; return; }
+    if (Array.isArray(j.assets) && j.assets.length) { renderDirect(j); return; }  // Vercel: one-shot result
     sid = j.session_id;
     timer = setInterval(poll, 1200);
     poll();

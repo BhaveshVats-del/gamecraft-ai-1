@@ -129,6 +129,20 @@ class ReplicateProvider(ImageProvider):
         return with_retry(call)
 
 
+def default_provider_name() -> str:
+    """IMAGE_PROVIDER wins; else the first configured key; else the offline mock."""
+    forced = os.getenv("IMAGE_PROVIDER")
+    if forced:
+        return forced.lower()
+    if os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY"):
+        return "gemini"
+    if os.getenv("OPENAI_API_KEY"):
+        return "openai"
+    if os.getenv("REPLICATE_API_TOKEN"):
+        return "replicate"
+    return "mock"
+
+
 _PROVIDERS = {}  # populated after the provider classes are defined
 
 

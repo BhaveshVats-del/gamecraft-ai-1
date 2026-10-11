@@ -41,6 +41,7 @@ from ai import (  # noqa: E402
     DEFAULT_STYLE,
     STYLES,
     contact_sheet,
+    default_provider_name,
     list_styles,
     regenerate_asset,
 )
@@ -58,16 +59,7 @@ _LOCK = threading.Lock()
 
 def default_provider() -> str:
     """Explicit IMAGE_PROVIDER wins; otherwise the first configured key; else mock."""
-    forced = os.getenv("IMAGE_PROVIDER")
-    if forced:
-        return forced.lower()
-    if os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY"):
-        return "gemini"
-    if os.getenv("OPENAI_API_KEY"):
-        return "openai"
-    if os.getenv("REPLICATE_API_TOKEN"):
-        return "replicate"
-    return "mock"
+    return default_provider_name()
 
 
 def _known_provider(name: str) -> bool:
