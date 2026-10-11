@@ -13,10 +13,10 @@ pip install -r ai/requirements.txt
 Get a free API key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey), then save it:
 
 ```bash
-echo "GEMINI_API_KEY=your_key_here" > ai/.env
+cp ai/.env.example ai/.env      # then paste your key inside
 ```
 
-(`.env` is gitignored — your key stays local. Alternatively: `export GEMINI_API_KEY=...`)
+(`.env` is gitignored — your key stays local and out of Git. Alternatively: `export GEMINI_API_KEY=...`)
 
 ## Usage
 
