@@ -1,1 +1,259 @@
-<!-- GameCraft AI frontend -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GameCraft AI</title>
+<style>
+  :root {
+    --bg: #0c1411; --panel: #122019; --panel2: #16281f;
+    --text: #e8f3ec; --muted: #8fa89b; --accent: #3fb8a6;
+    --gold: #d9a441; --danger: #e0654f; --line: #22392e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: radial-gradient(1200px 500px at 70% -10%, #14352a 0%, var(--bg) 55%);
+    color: var(--text); font-family: "Segoe UI", system-ui, sans-serif;
+    min-height: 100vh; padding: 28px clamp(16px, 4vw, 56px);
+  }
+  header { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 22px; }
+  h1 { font-size: 26px; letter-spacing: .5px; }
+  h1 .spark { color: var(--accent); }
+  .tag { color: var(--muted); font-size: 14px; }
+  .pill {
+    margin-left: auto; font-size: 12px; padding: 5px 12px; border: 1px solid var(--line);
+    border-radius: 999px; color: var(--accent); background: var(--panel);
+  }
+  .layout { display: grid; grid-template-columns: 360px 1fr; gap: 22px; }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+  label { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin: 14px 0 6px; }
+  label:first-child { margin-top: 0; }
+  textarea {
+    width: 100%; min-height: 84px; resize: vertical; background: var(--panel2);
+    border: 1px solid var(--line); border-radius: 10px; color: var(--text);
+    padding: 10px 12px; font: 14px/1.45 inherit;
+  }
+  textarea:focus { outline: 1px solid var(--accent); }
+  .styles { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .style-card {
+    border: 1px solid var(--line); border-radius: 10px; padding: 8px; cursor: pointer;
+    background: var(--panel2); text-align: left; color: var(--text); font: inherit;
+  }
+  .style-card.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .style-card .name { font-size: 12px; font-weight: 600; margin-bottom: 6px; }
+  .swatches { display: flex; gap: 3px; }
+  .swatches i { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
+  button.primary {
+    margin-top: 18px; width: 100%; padding: 12px; border: 0; border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent), #2a8d7f); color: #06231d;
+    font: 700 15px inherit; cursor: pointer;
+  }
+  button.primary:disabled { opacity: .45; cursor: wait; }
+  .hint { margin-top: 10px; font-size: 12px; color: var(--muted); }
+  .banner { margin-top: 14px; font-size: 13px; padding: 10px 12px; border-radius: 10px; display: none; }
+  .banner.err { display: block; background: #2a1512; border: 1px solid #57291f; color: #f0a894; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .card .img { aspect-ratio: 1; background: #0a100d center/70% no-repeat; display: grid; place-items: center; }
+  .card .body { padding: 12px; }
+  .card .type { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+  .card .name { font-size: 15px; font-weight: 600; margin: 3px 0 8px; min-height: 20px; }
+  .badge { display: inline-block; font-size: 11px; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .badge.generating { color: var(--gold); border-color: #5a4517; }
+  .badge.done { color: var(--accent); border-color: #1d5a50; }
+  .badge.error { color: var(--danger); border-color: #5c261c; }
+  .err-msg { margin-top: 8px; font-size: 12px; color: var(--danger); word-break: break-word; }
+  .mini {
+    margin-top: 10px; width: 100%; padding: 7px; font: 600 12px inherit; cursor: pointer;
+    background: transparent; color: var(--accent); border: 1px solid var(--line); border-radius: 8px;
+    display: none;
+  }
+  .mini:hover { border-color: var(--accent); }
+  .spinner { width: 26px; height: 26px; border: 3px solid var(--line); border-top-color: var(--accent);
+             border-radius: 50%; animation: spin .9s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .actions { margin-top: 18px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .linkish {
+    color: var(--gold); text-decoration: none; font-size: 14px; font-weight: 600;
+    border: 1px solid #5a4517; padding: 9px 16px; border-radius: 10px;
+  }
+  .linkish:hover { background: #241a09; }
+  .progress { margin-top: 6px; font-size: 13px; color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>GameCraft<span class="spark">AI</span></h1>
+  <span class="tag">one idea in &rarr; a consistent 6-asset game set out</span>
+  <span class="pill" id="provider-pill">connecting&hellip;</span>
+</header>
+
+<div class="layout">
+  <section class="panel">
+    <label for="concept">Game concept</label>
+    <textarea id="concept">A fantasy game set in an enchanted forest: a druid hero, a moss-covered beast, and glowing teal runes</textarea>
+
+    <label>Art style</label>
+    <div class="styles" id="styles"></div>
+
+    <button class="primary" id="go" disabled>Generate asset set</button>
+    <div class="hint" id="hint"></div>
+    <div class="banner" id="banner"></div>
+  </section>
+
+  <section>
+    <div class="progress" id="progress">Describe your game and hit generate.</div>
+    <div class="grid" id="grid" style="margin-top:12px"></div>
+    <div class="actions" id="actions"></div>
+  </section>
+</div>
+
+<script>
+const TYPES = ["character", "environment", "weapon", "icon_1", "icon_2", "icon_3"];
+const LABELS = { character: "Character", environment: "Environment", weapon: "Weapon",
+                 icon_1: "Icon 1", icon_2: "Icon 2", icon_3: "Icon 3" };
+let sid = null, timer = null, chosenStyle = null;
+
+const $ = id => document.getElementById(id);
+
+async function init() {
+  try {
+    const j = await (await fetch("/api/styles")).json();
+    chosenStyle = j.default;
+    $("provider-pill").textContent = "model: " + j.provider;
+    $("hint").textContent = "Provider \"" + j.provider + "\" is offline-safe. Set GEMINI_API_KEY / OPENAI_API_KEY / REPLICATE_API_TOKEN for a real model.";
+    $("styles").innerHTML = "";
+    for (const s of j.styles) {
+      const b = document.createElement("button");
+      b.className = "style-card" + (s.id === chosenStyle ? " sel" : "");
+      b.innerHTML = `<div class="name">${s.label}</div><div class="swatches">` +
+        s.palette.map(c => `<i style="background:${c}"></i>`).join("") + `</div>`;
+      b.onclick = () => {
+        chosenStyle = s.id;
+        document.querySelectorAll(".style-card").forEach(x => x.classList.remove("sel"));
+        b.classList.add("sel");
+      };
+      $("styles").appendChild(b);
+    }
+    $("go").disabled = false;
+  } catch (e) {
+    $("hint").textContent = "Could not reach the API: " + e;
+  }
+}
+
+function card(type) {
+  return `<div class="card" id="card-${type}">
+    <div class="img" id="img-${type}"></div>
+    <div class="body">
+      <div class="type">${LABELS[type]}</div>
+      <div class="name" id="name-${type}">&nbsp;</div>
+      <span class="badge" id="badge-${type}">pending</span>
+      <div class="err-msg" id="err-${type}"></div>
+      <button class="mini" id="regen-${type}" onclick="regen('${type}')">Regenerate</button>
+    </div>
+  </div>`;
+}
+
+function renderSkeleton() {
+  $("grid").innerHTML = TYPES.map(card).join("");
+  for (const t of TYPES) {
+    $("img-" + t).innerHTML = '<div class="spinner"></div>';
+    $("badge-" + t).textContent = "queued";
+  }
+  $("actions").innerHTML = "";
+}
+
+function render(j) {
+  if (!j.assets) return;
+  $("progress").textContent = `Generating &ldquo;${j.concept}&rdquo; &mdash; ${j.done}/${j.total} done` +
+    (j.source === "cache" ? " (served from demo cache)" : "");
+  for (const a of j.assets) {
+    const b = $("badge-" + a.type);
+    b.textContent = a.status; b.className = "badge " + a.status;
+    if (a.name) $("name-" + a.type).textContent = a.name;
+    if (a.status === "done" && a.url) {
+      $("img-" + a.type).innerHTML = "";
+      $("img-" + a.type).style.backgroundImage = `url(${a.url})`;
+      $("img-" + a.type).style.backgroundSize = "100% 100%";
+      $("regen-" + a.type).style.display = "block";
+    } else if (a.status === "generating") {
+      $("img-" + a.type).innerHTML = '<div class="spinner"></div>';
+    } else if (a.status === "error") {
+      $("img-" + a.type).innerHTML = "";
+      $("err-" + a.type).textContent = a.error || "generation failed";
+    }
+  }
+  const failed = j.assets.some(a => a.status === "error");
+  const allSettled = j.assets.every(a => a.status === "done" || a.status === "error");
+  if (allSettled) {
+    stopPoll();
+    $("progress").textContent = (failed ? "Finished with errors &mdash; " : "Done &mdash; ") +
+      j.done + "/" + j.total + " assets ready.";
+    if (j.done > 0) {
+      $("actions").innerHTML =
+        `<a class="linkish" href="/api/assets/${j.session_id}/contact_sheet.png" target="_blank">Contact sheet</a>
+         <a class="linkish" href="/api/export/${j.session_id}">Download set (zip)</a>`;
+    }
+  }
+}
+
+async function poll() {
+  try {
+    const r = await fetch("/api/status/" + sid);
+    if (r.status === 404) { stopPoll(); fail("Session lost (server restarted?). Try again."); return; }
+    const j = await r.json();
+    if (j.status === "error") { stopPoll(); fail(j.error || "Generation failed."); return; }
+    render(j);
+  } catch (e) { /* transient network blip: keep polling */ }
+}
+
+function stopPoll() { if (timer) { clearInterval(timer); timer = null; } }
+
+function fail(msg) {
+  const b = $("banner");
+  b.className = "banner err"; b.textContent = msg;
+  $("go").disabled = false;
+  stopPoll();
+}
+
+async function regen(type) {
+  const btn = $("regen-" + type);
+  btn.style.display = "none"; btn.disabled = true;
+  const badge = $("badge-" + type);
+  badge.textContent = "generating"; badge.className = "badge generating";
+  $("img-" + type).innerHTML = '<div class="spinner"></div>';
+  $("img-" + type).style.backgroundImage = "none";
+  $("err-" + type).textContent = "";
+  await fetch(`/api/regenerate/${sid}/${type}`, { method: "POST" });
+  timer = setInterval(poll, 1000);
+  poll();
+}
+
+$("go").onclick = async () => {
+  const concept = $("concept").value.trim();
+  if (!concept) return;
+  $("go").disabled = true;
+  $("banner").className = "banner";
+  $("actions").innerHTML = "";
+  renderSkeleton();
+  try {
+    const r = await fetch("/api/generate", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ concept, style: chosenStyle }),
+    });
+    const j = await r.json();
+    if (!r.ok) { fail(j.error || "Request failed."); $("go").disabled = false; return; }
+    sid = j.session_id;
+    timer = setInterval(poll, 1200);
+    poll();
+  } catch (e) {
+    fail("Could not reach the API: " + e);
+    $("go").disabled = false;
+  }
+};
+
+init();
+</script>
+</body>
+</html>

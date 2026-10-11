@@ -218,3 +218,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# GameCraft AI generated output
+outputs/
+demo_cache/
