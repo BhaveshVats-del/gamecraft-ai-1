@@ -1,1 +1,0 @@
-# GameCraft AI image generation

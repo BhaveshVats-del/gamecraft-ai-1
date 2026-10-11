@@ -1,0 +1,8 @@
+pillow>=10.0
+python-dotenv>=1.0
+openai>=1.40          # LLM prompt expansion + OpenAI images provider
+google-genai>=1.0     # Gemini images provider
+replicate>=0.30       # Replicate provider (FLUX / SDXL)
+pytest>=8.0
+# Optional (icon background removal, heavy install):
+# rembg[cpu]

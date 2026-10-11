@@ -1,0 +1,7 @@
+[
+  {"id": "farm_cyberpunk", "concept": "A post-apocalyptic cyberpunk farming game where robots tend glowing crops", "style": "scifi_neon", "why": "Exaggerates mismatch in naive output: farming + cyberpunk"},
+  {"id": "pirate_cats", "concept": "A cozy pirate adventure where the whole crew are cats sailing a teapot ship", "style": "painterly", "why": "Charming, instantly readable, strong motifs"},
+  {"id": "dungeon_pixel", "concept": "A retro dungeon crawler about a lantern-carrying mushroom knight in a crystal cave", "style": "pixel_art", "why": "Showcases pixel style consistency"},
+  {"id": "space_bakery", "concept": "A sci-fi space station bakery management game with alien customers", "style": "scifi_neon", "why": "Funny contrast, icons are food items"},
+  {"id": "forest_spirits", "concept": "A hand-drawn fantasy game about a young druid befriending forest spirits", "style": "painterly", "why": "Safe, reliably beautiful backup"}
+]

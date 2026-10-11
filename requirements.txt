@@ -1,0 +1,5 @@
+# Vercel build + local dev dependencies
+flask>=3.0        # local dev server (backend/app.py) - not used by the Vercel handlers
+pillow>=10.0      # pipeline post-processing + mock provider
+openai>=1.40      # OpenAI image provider (used when OPENAI_API_KEY is set)
+google-genai>=1.0 # Gemini image provider (used when GEMINI_API_KEY is set)
